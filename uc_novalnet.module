@@ -1,0 +1,218 @@
+<?php
+/**
+ * Novalnet payment module related file
+ * This module is used for real time processing of
+ * Novalnet transaction of customers.
+ *
+ * @category   PHP
+ * @package    uc_novalnet
+ * @author     Novalnet AG
+ * @copyright  Copyright by Novalnet
+ * @license    https://www.novalnet.de/payment-plugins/kostenlos/lizenz
+ *
+ * Script   : uc_novalnet.module
+ *
+ * This module that enables Novalnet payment modules in ubercart and defined callbacks
+ * to triggers the Novalnet gateway to complete the order purchase in the shop system.
+ *
+ */
+
+require_once DRUPAL_ROOT . '/includes/locale.inc';
+
+module_load_include('inc', 'uc_novalnet', 'includes/uc_novalnet');
+
+/**
+ *
+ * Implements hook_payment_method().
+ *
+ * (Core function that used for payment declaration in shop system)
+ *
+ * @param none
+ * @return array $methods
+ */
+function uc_novalnet_uc_payment_method() {
+	
+    $basic_data    = variable_get('novalnet_params', '');
+  /* Get Novalnet payments */
+    $payment_array = uc_novalnet_payment_methods();
+
+  /* basic configuration not configured, returns empty payment array */
+    if (empty($basic_data['is_details_saved']) && arg(0) != 'admin')
+    return array();
+
+  /* hide the payment, when exceeds 3 times of pin change */
+    uc_novalnet_unset_payment($payment_array);
+
+  /* Redirect payment array - contains payments which processed as redirection */
+    $redirect_payments  = array('novalnet_paypal', 'novalnet_ideal', 'novalnet_instantbank', 'novalnet_eps', 'novalnet_giropay', 'novalnet_cc', 'novalnet_przelewy24');
+
+    if (variable_get('novalnet_paypal_enable_one_shop_clicking') == 1 && isset($_SESSION['novalnet_session']['novalnet_paypal']['paypal_given_details']) && $_SESSION['novalnet_session']['novalnet_paypal']['paypal_given_details'] == 1)
+    unset($redirect_payments[0]);
+  /* Unset the Credit card payment from the Redirection payment array */
+    if (variable_get('novalnet_cc_cc3d') == 0)
+    if (variable_get('novalnet_cc_force_cc3d') == 0)
+      unset($redirect_payments[5]);
+
+    $methods = array();
+    foreach ($payment_array as $key => $payment) {
+        $methods[$key]   = array(
+          'id'           => $key,
+          'name'         => $payment['name'],
+          'desc'         => $payment['desc'],
+          'callback'     => 'uc_payment_method_novalnet_methods',
+          'weight'       => 2,
+          'checkout'     => FALSE,
+          'no_gateway'   => TRUE,
+        );
+
+        if (arg(0) != 'admin') {
+			$module_url = drupal_get_path('module', 'uc_novalnet');
+			$variables = array(
+				'path' => $module_url . '/img/' . $key . '.png',
+				'alt' => $payment['name'],
+				'title' => $payment['name'],
+				  );
+			if ( $key == 'novalnet_cc' ) {
+				$module_url = drupal_get_path('module', 'uc_novalnet');
+				$payment_logo = ($basic_data['paymentlogo'] == '1') ? l(theme('image', $variables), t('https://www.novalnet.com/credit-card'), array('html' => TRUE, 'attributes' => array('target' => '_blank'))) . l(theme('image', array('path' => $module_url . '/img/novalnet_cc_master.png', 'alt' => $payment['name'], 'title' => $payment['name'])), t('https://www.novalnet.com/credit-card'), array('html' => TRUE, 'attributes' => array('target' => '_blank'))) : '';
+				if ($basic_data['paymentlogo'] == '1') {
+				   // Display AMEX, Cartasi, Maestro Logo, if enabled in backend
+					foreach (array('novalnet_cc_amex', 'novalnet_cc_maestro') as $logo) {
+					  if (variable_get($logo)) {
+						$variables['path'] = $module_url . '/img/' . $logo . '.png';
+						$payment_logo .= ' ' . l(theme('image', $variables), t('https://www.novalnet.com/credit-card'), array('html' => TRUE, 'attributes' => array('target' => '_blank')));
+					  }
+				  }
+				}
+			}
+			else {
+				$payment_logo = ($basic_data['paymentlogo'] == '1') ? l(theme('image', $variables), uc_novalnet_logo_url($key), array('html' => TRUE, 'attributes' => array('target' => '_blank'))) : '';
+			}
+			$methods[$key]['title'] = $payment['name'] . '   ' . $payment_logo;
+		}
+        if (in_array($key, $redirect_payments)) {
+            /* Submit handler - callback function for redirection payments */
+            $methods[$key]['redirect'] = 'uc_novalnet_redirect_form';
+        }
+    }
+    return $methods;
+}
+
+/**
+ * Callback function for all payment methods
+ * Payment method callback function for all payments - which organise the payment values in every stage of a order purchase(E.g: checkout page, review * page etc.)
+ *
+ * @param  string $op
+ * @param  object $arg1
+ * @param  object $arg2
+ * @param  array $form_state
+ * @return array or bool
+ */
+function uc_payment_method_novalnet_methods($op, &$arg1, $arg2 = NULL, $form_state = NULL) {
+    /* Including the Novalnet css file */
+    drupal_add_css(drupal_get_path('module', 'uc_novalnet') . '/css/uc_novalnet.css');
+    switch ($op) {
+        /* Get the back-end configuration for the individual payments */
+        case 'settings':
+            return isset($form_state['build_info']['args'][0]) ? uc_novalnet_backend_config( $form_state['build_info']['args'][0]) : array();
+        /* Get the cart details from the shop */
+        case 'cart-details':
+            $form = array();
+            $form = uc_novalnet_getform($form, $form_state, $arg1);
+            $desc = uc_novalnet_payment_methods($arg1->payment_method);
+            if ($arg1->payment_method == 'novalnet_cc' && (variable_get('novalnet_cc_cc3d') == 1 || variable_get('novalnet_cc_force_cc3d') == 1)) {
+                $desc['desc'] = '';
+                $desc = uc_novalnet_payment_methods('novalnet_giropay');
+                $desc['desc'] = '<div id="redirect_desc">' . $desc['desc'] . '</div>';
+            } else {
+                $desc['desc'] = (variable_get($arg1->payment_method.'_novalnet_description')) ? variable_get($arg1->payment_method.'_novalnet_description') : $desc['desc'];
+            }
+            $form[$arg1->payment_method.'_novalnet_description'] = array(
+            '#markup' => '<p>' . $desc['desc']  . '</p>');
+            if ($arg1->payment_method == 'novalnet_sepa' ) {
+              $form['nnsepa_ibanconf_bool'] = array(
+				'#type'           => 'hidden',
+				'#default_value'  => '1',
+				'#attributes'     => array('id' => 'nnsepa_ibanconf_bool'),
+			  );
+			  $form['nnsepa_ibanconf'] = array(
+				'#type'           => 'markup',
+				'#markup'         => '<strong><a href="#" id="nnsepa_ibanconf">' . t('I hereby grant the mandate for the SEPA direct debit (electronic transmission) and confirm that the given bank details are correct!') . '</a></strong>',
+			  );
+			   $form['nnsepa_ibanconf_desc'] = array(
+			   '#prefix'          => '<div  id="nnsepa_ibanconf_desc">',
+			   '#type'            => 'fieldset',
+			   '#description'     => t("I authorise (A) Novalnet AG to send instructions to my bank to debit my account and (B) my bank to debit my account in accordance with the instructions from Novalnet AG.<br><br><strong>Creditor identifier: DE53ZZZ00000004253</strong><br><br><strong>Note:</strong> You are entitled to a refund from your bank under the terms and conditions of your agreement with bank. A refund must be claimed within 8 weeks starting from the date on which your account was debited."),
+			   '#attributes'      => array('style' => 'font-weight:normal'),
+			   '#suffix'          =>  '</div>',
+			  );
+			  $form['nnsepa_normal_close'] = array(
+				'#type'           => 'markup',
+				'#markup'         => '</div>',
+			  );
+            }
+            return $form;
+        case 'cart-process':
+            return TRUE;
+        case 'cart-review':
+            $payment_method = $arg1->payment_method;
+            $billing_country = uc_get_country_data(array('country_id' => $arg1->billing_country));
+            if (variable_get($payment_method . '_payment_guarantee_check', 0) && !variable_get($payment_method . '_payment_guarantee_active', 0)) {
+                $_SESSION['novalnet_session'][$payment_method][$payment_method . '_birth_date'] = !empty($_SESSION['novalnet_session'][$payment_method][$payment_method . '_birth_date']) ? $_SESSION['novalnet_session'][$payment_method][$payment_method . '_birth_date'] : '';
+                uc_novalnet_gurantee_limit_validation($arg1, $billing_country[0]['country_iso_code_2'], array($arg1->delivery_street1, $arg1->delivery_street2, $arg1->delivery_city, $arg1->delivery_postal_code, $arg1->delivery_country), array($arg1->billing_street1, $arg1->billing_street2, $arg1->billing_city, $arg1->billing_postal_code, $arg1->billing_country), $_SESSION['novalnet_session'][$payment_method][$payment_method . '_birth_date'], $arg1->billing_company, $op);
+            }           
+                
+            /* Store the payment session values */
+            uc_novalnet_storervalues($arg1);
+            return TRUE;
+        case 'order-submit':
+
+            uc_validate_novalnet_getparams($arg1);
+            $data = array();
+            $payment_method = $arg1->payment_method;
+            
+            /* To form the basic and customer related parameters */
+            uc_novalnet_getparams($data, $arg1);
+            if ( $payment_method == 'novalnet_paypal' && (!empty($_SESSION['novalnet_session'][$payment_method]['paypal_given_details']) && $_SESSION['novalnet_session'][$payment_method]['paypal_given_details'] == 1)) {
+                uc_novalnet_decode_param($data);
+                unset($data['hash']);unset($data['user_variable_0']);unset($data['uniqid']);unset($data['implementation']);
+            }
+            /* Store the Credit card and SEPA requet for zero amount booking process */
+            if ( in_array($payment_method, array('novalnet_sepa', 'novalnet_cc', 'novalnet_paypal')) && variable_get($payment_method . '_enable_one_shop_clicking') == 2)
+                $_SESSION['novalnet_session'][$payment_method]['request'] = serialize($data);
+                
+
+            if (isset($_SESSION['novalnet_session'][$payment_method]['tid'])) {
+                $xml_request = array(
+                    'vendor_id'     => $data['vendor'],
+                    'vendor_authcode' => $data['auth_code'],
+                    'tid'             => $_SESSION['novalnet_session'][$payment_method]['tid'],
+                    'lang'            => $data['lang'],
+                );
+                $request_type = array('callback'  => 'PIN_STATUS',
+                    'sms'       => 'PIN_STATUS');
+                $xml_request['request_type']  =  $request_type[variable_get($payment_method . '_pin_method')];
+                $xml_request['pin'] = $_SESSION['novalnet_session'][$payment_method]['pin'];
+                uc_novalnet_save_log($arg1->order_id, $xml_request, 'request');
+                $parsed = uc_novalnet_send_payport($xml_request);
+                uc_novalnet_save_log($arg1->order_id, $parsed, 'response');
+                $_SESSION['novalnet_session'][$payment_method]['masked_acc_details']['tid_status'] = isset($parsed['tid_status']) ? $parsed['tid_status'] : '';
+                $parsed = array_merge($parsed, $_SESSION['novalnet_session'][$payment_method]);
+            } else {
+                $response = uc_novalnet_send_payport($data, 'curl');
+                parse_str($response, $parsed);                
+            }
+            $parsed = array_merge($data, $parsed);
+            if (!empty($parsed['due_date'])) $parsed['due_date'] = date('m/d/Y', strtotime($parsed['due_date']));
+                /* To complete the order in the shop */
+                uc_novalnet_completeorder($parsed, $arg1);
+            break;
+            /* Load the payments for admin reorder in shop back-end */
+            case 'order-view':
+                /* Allowed the payments only which having the order balance greater than 0 */
+                $transaction_details = nn_variable_get(array('order_id' => $arg1->order_id), 'uc_novalnet_transaction', array('tid'));
+                if (uc_payment_balance($arg1) > 0 && empty($transaction_details))
+            return drupal_get_form('uc_novalnet_order_view_form', $arg1->order_id);
+    }
+}
+

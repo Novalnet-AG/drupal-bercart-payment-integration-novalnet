@@ -1,0 +1,164 @@
+<?php
+/**
+ * Novalnet payment module related file
+ * This module is used for real time processing of
+ * Novalnet transaction of customers.
+ *
+ * @category   PHP
+ * @package    uc_novalnet
+ * @author     Novalnet AG
+ * @copyright  Copyright by Novalnet
+ * @license    https://www.novalnet.de/payment-plugins/kostenlos/lizenz
+ *
+ *
+ * Script   : uc_novalnet.install
+ *
+ */
+
+/**
+ *
+ * Implements hook_install().
+ *
+ * @param  none
+ * @return none
+ */
+function uc_novalnet_install() {
+  db_change_field('uc_payment_receipts', 'method', 'method', array(
+    'type' => 'text',
+  ));
+}
+
+/**
+ *
+ * Implements hook_schema().
+ *
+ * @param  none
+ * @return array $schema
+ */
+function uc_novalnet_schema() {
+    $schema = array();
+    $schema['uc_novalnet_transaction'] = array(
+        'description' => 'Stores every Novalnet transactions',
+        'fields'      => array(
+              'order_id'           => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'tid'                => array('type' => 'int', 'size' => 'big', 'not null' => TRUE, 'default' => 0),
+              'status'             => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'paymentkey'         => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'amount'             => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'customer_id'        => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'due_date'           => array('mysql_type' => 'DATETIME', 'not null' => TRUE),
+              'subscription'       => array('type' => 'int', 'size' => 'big', 'not null' => TRUE, 'default' => 0),
+              'callback_amount'    => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'callback_total'     => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'vendor_id'          => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'auth_code'          => array('type' => 'varchar' , 'length' => 40, 'not null' => TRUE, 'default' => ''),
+              'product_id'         => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'tariff_id'          => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+              'request'            => array('type' => 'text'),
+              'masked_acc_details' => array('type' => 'text'),
+              'is_ref_order'       => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+          ),
+        'indexes'     => array(
+              'novalnet_tid'      => array('tid'),
+              'novalnet_oid'      => array('order_id'),
+        ),
+    );
+
+    $schema['uc_novalnet_logs'] = array(
+    'description'  => 'Logs for every Novalnet transactions',
+    'fields'       => array(
+            'id'       => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+            'order_id' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'logtype'  => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => ''),
+            'logvalue' => array('type' => 'text', 'size' => 'big', 'not null' => TRUE),
+            'logtime'  => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '')
+    ),
+    'indexes'     => array(
+            'nn_orderid' => array('order_id'),
+    ),
+    'primary key' => array('id')
+    );
+
+    $schema['uc_novalnet_cancel'] = array(
+    'description' => 'Stores the canceled order deatials',
+    'fields'      => array(
+            'order_id'   => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'tid'        => array('type' => 'int', 'size' => 'big', 'not null' => TRUE, 'default' => 0),
+            'reason_id'  => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''),
+            'ref_orders' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes'   => array(
+            'nn_tid' => array('tid'),
+    ),
+    );
+
+    $schema['nn_aff_account_detail'] = array(
+    'description' => 'Novalnet merchant / affiliate account information',
+    'fields'      => array(
+            'id'               => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+            'vendor_id'        => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'vendor_authcode'  => array('type' => 'varchar', 'length' => 40, 'not null' => TRUE, 'default' => ''),
+            'product_id'       => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'product_url'      => array('type' => 'varchar', 'length' => 40, 'not null' => TRUE, 'default' => ''),
+            'activation_date'  => array('mysql_type' => 'DATETIME', 'not null' => TRUE),
+            'aff_id'           => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'aff_authcode'     => array('type' => 'varchar', 'length' => 40, 'not null' => TRUE, 'default' => ''),
+            'aff_accesskey'    => array('type' => 'varchar', 'length' => 40, 'not null' => TRUE, 'default' => ''),
+    ),
+    'indexes'   => array(
+            'nn_aff_id' => array('aff_id'),
+    ),
+    'primary key'  => array('id')
+    );
+
+    $schema['nn_aff_user_detail'] = array(
+    'description' => 'Novalnet affiliate user account information',
+    'fields'      => array(
+            'aff_id'           => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'customer_id'      => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+            'aff_order_no'     => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes'   => array(
+            'nn_customer_id' => array('customer_id'),
+    )
+    );
+
+    return $schema;
+}
+
+/**
+ *
+ * Implements hook_uninstall().
+ *
+ * @param  none
+ * @return none
+ */
+function uc_novalnet_uninstall() {
+  db_delete('variable')
+    ->condition('name', '%novalnet%', 'LIKE')
+    ->execute();
+}
+
+/**
+ *
+ * Implementation of module upgrade
+ *
+ * Upgrade novalnet version 11.1.1 to 11.2.0.
+ *
+ * @param $sandbox
+ * @return none
+ */
+function uc_novalnet_update_7100(&$sandbox) {
+    foreach ( array(
+         'request' => array('type' => 'text'),
+         'is_ref_order' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+         'masked_acc_details' => array('type' => 'text'),
+         'customer_id' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ) as $flag_key => $flag_value) {
+        db_add_field('uc_novalnet_transaction', $flag_key, $flag_value);
+    }
+    // Add callback_total column field if not exists
+    if (!db_field_exists('uc_novalnet_transaction', 'callback_total')) {
+        db_add_field('uc_novalnet_transaction', 'callback_total', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+    }
+}

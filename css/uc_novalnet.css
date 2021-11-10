@@ -1,0 +1,104 @@
+/**
+ * @file
+ * Styles for uc_novalnet module.
+ */
+
+.payment-details-novalnet_sepa label{
+  clear: left;
+  float: left;
+  margin: 2px 0;
+  padding-top: 5px;
+  width: 15em;
+}
+
+.payment-details-novalnet_sepa input,
+.payment-details-novalnet_sepa select
+{
+  float: left;
+  margin: 2px;
+  width:28%;
+}
+
+#nnsepa_country {
+  float: left;
+  margin: 2px;
+  width: 29.3%;
+}
+
+#nnsepa_ibanconf, #edit-panes-payment-details-novalnet-sepa-forget-pin{
+  width:4%;
+}
+.form-item-panes-payment-details-nnsepa-ibanconf, .form-item-panes-payment-details-novalnet-sepa-forget-pin {
+  clear:both;
+}
+.form-item-panes-payment-details-nnsepa-ibanconf {
+  margin-left: 29%;
+}
+.account_details tbody,.account_details tr td,.account_details tr th{
+  border:none;
+  background-color:#fff;
+}
+.form-item-panes-payment-details-nnsepa-ibanconf label,
+#nnsepa_iban_div, #loading-img{
+  display:none ;
+}
+#nnsepa_iban_div{
+  float:left;
+}
+#nnsepa_iban_div label{
+  width:50px;
+  float:left;
+}
+#frm_iban{
+  clear:none;
+  width:198px !important ;
+}
+.account_details {
+  clear: both;
+  left: 30%;
+  max-height: 85%;
+  overflow-y:scroll;
+  position: fixed;
+  top: 10%;
+  width: 45%;
+  z-index: 1000;
+  background-color:#fff;
+  padding:2px;
+  display:none;
+}
+.account_details .header{
+  font-size: 14px;
+  font-weight: bold;
+  color:#00669d;
+  border-bottom:1px solid #878787;
+}
+.account_details img{
+  float:right;
+}
+#loading-img{
+  background: none repeat scroll 0 0 #000;
+  height: 100%;
+  left: 0;
+  opacity: 0.5;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index:900;
+  display:none;
+}
+#loading-img img{
+  left: 50%;
+  position: absolute;
+  top: 50%;
+}
+.form-item-panes-payment-details-novalnet-sepa-forget-pin label{
+  float:none !important;
+}
+.paypal_enter_new, .cc_enter_new, .sepa_enter_new { cursor : pointer;color: blue;}
+.none, .form-item-nn-amount-book-textfield {display: none;}
+#nn_global_loading {margin: 45%;position: absolute;}
+/* Admin side payment form display */
+#uc-novalnet-getform .form-item {width: 50%;}
+#uc-novalnet-getform #nnsepa_ibanconf {float: left; margin: 6px;}
+#uc-novalnet-getform #nnsepa_ibanconf {float: left; margin: 6px;}
+
