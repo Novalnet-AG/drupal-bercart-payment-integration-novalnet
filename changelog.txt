@@ -1,0 +1,48 @@
+*** Changelog ***
+
+= 11.2.0 - 2019.11.19 =
+* New      - Force 3D secure process has been implemented as per predefined filters and settings in the Novalnet Merchant Administration portal
+* New      - Custom checkout overlay for Barzahlen
+* New      - Guaranteed payment pending status has been implemented
+* New      - Customized the payment logo
+* Enhanced - Guaranteed payment minimum amount reduced to 9,99 EUR
+* Enhanced - Implemented new encryption method for redirect payments
+* Enhanced - Auto configuration call perform via cURL method
+* Enhanced - On-hold transaction configuration has been implemented for Credit Card, Direct Debit SEPA,Direct Debit SEPA with payment guarantee,Invoice, Invoice with payment guarantee and PayPal
+* Enhanced - Novalnet bank details will be displayed in invoice for on-hold transactions in Invoice, Invoice with payment guarantee and Prepayment
+* Enhanced - Novalnet Merchant Administration portal link has been updated in shop admin
+* Enhanced - Callback has been optimized as per the new testcase
+* Enhanced - Adjusted the payment plugin for IPV6 condition
+* Removed  - Dynamic subscription management
+* Removed  - Autofill and Payment refill for payment data
+* Removed  - BIC field for Direct Debit SEPA
+* Removed  - Payment reference configuration for Invoice / Prepayment
+* Removed  - Transaction reference in payments
+  
+= 11.1.1 - 2017.12.07 = 
+* Enhanced - Dynamic IP control applied through domain instead of static IP in vendor script. Actual IP of Novalnet will be extracted in real time from the domain
+* Removed  - Enable debug mode configuration in Merchant script management
+
+= 11.1.0 - 2017.02.23 =    
+* Credit Card iframe updated
+* One click shopping for Credit Card and PayPal implemented
+* Edit option in Credit Card and PayPal for registered customers implemented
+* Zero amount booking for PayPal implemented
+* On-hold transactions for PayPal implemented
+* New payment method "Przelewy24" added
+
+= 11.0.0 - 2016.05.12 =
+* Auto configuration of vendor credentials
+* Zero amount booking
+* One click shopping for Direct Debit SEPA.
+* Iframe and hosted page implementation for Credit Card
+* Implemented Direct Debit SEPA with payment guarantee, Invoice with payment guarantee, eps and giropay payments
+* Edit option in Direct Debit SEPA for registered customers
+* Direct Debit SEPA overlay removed
+* Notify URL configuration in shop backend
+* Logo control has been implemented in global configuration
+* Responsive templates has been implemented
+* New booking with payment reference		
+
+= 10.0.0 - 2015.05.12 =
+* New release
