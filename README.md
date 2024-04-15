@@ -46,7 +46,6 @@ For detailed documentation and other technical inquiries,please contact <a href=
 Please contact: <a href="mailto:sales@novalnet.de"> sales@novalnet.de </a> or +49 89 9230683-20 for more information & additional inquiries.
 
 ## Integration steps
-
 Follow these steps to integrate Novalnet’s Drupal Übercart Payment Integration to your Drupal Übercart shop:
 
 1. Get the Drupal Übercart Payment Module & detailed documentation by <a href=  "https://www.novalnet.de/kontakt/sales"> contacting us </a>
@@ -58,15 +57,16 @@ Follow these steps to integrate Novalnet’s Drupal Übercart Payment Integratio
 See our License Agreement at: <a href= "https://www.novalnet.de/payment-plugins/kostenlos/lizenz">  https://www.novalnet.com/payment-plugins/free/license</a>
 
 ## Documentation & Support
-
 For more information about the Drupal Übercart Payment Integration by Novalnet, please get in touch with us: <a href="mailto:sales@novalnet.de"> sales@novalnet.de or +49 89 9230683-20
 
 Novalnet AG<br>
 Zahlungsinstitut (ZAG)<br>
-Feringastr. 4<br>
-85774 Unterföhring<br>
+Gutenbergstraße 7<br>
+D-85748 Garching<br>
 Deutschland<br>
-Web: <a href= "https://www.novalnet.de/"> www.novalnet.de </a>
+E-mail: sales@novalnet.de<br>
+Tel: +49 89 9230683-20<br>
+Web: www.novalnet.de
 
 ## Novalnet AG
 
